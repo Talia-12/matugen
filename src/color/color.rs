@@ -1,13 +1,16 @@
 use material_colors::{
     blend::harmonize,
     color::Argb,
+    dislike::fix_if_disliked,
     dynamic_color::{DynamicScheme, MaterialDynamicColors},
     hct::Hct,
     image::{FilterType, ImageReader},
+    palette::TonalPalette,
     scheme::variant::{
         SchemeContent, SchemeExpressive, SchemeFidelity, SchemeFruitSalad, SchemeMonochrome,
         SchemeNeutral, SchemeRainbow, SchemeTonalSpot,
     },
+    temperature::TemperatureCache,
     theme::{ColorGroup, CustomColor, CustomColorGroup},
 };
 
@@ -143,7 +146,7 @@ pub fn generate_dynamic_scheme(
     is_dark: bool,
     contrast_level: Option<f64>,
 ) -> DynamicScheme {
-    match scheme_type.unwrap_or(SchemeTypes::SchemeContent) {
+    let mut scheme = match scheme_type.unwrap_or(SchemeTypes::SchemeContent) {
         SchemeTypes::SchemeContent => {
             SchemeContent::new(Hct::new(source_color), is_dark, contrast_level).scheme
         }
@@ -168,7 +171,15 @@ pub fn generate_dynamic_scheme(
         SchemeTypes::SchemeTonalSpot => {
             SchemeTonalSpot::new(Hct::new(source_color), is_dark, contrast_level).scheme
         }
-    }
+    };
+
+    let colours = TemperatureCache::new(Hct::new(source_color)).analogous(Some(3), Some(3));
+
+    scheme.primary_palette = TonalPalette::from_hct(fix_if_disliked(colours[1]));
+    scheme.secondary_palette = TonalPalette::from_hct(fix_if_disliked(colours[0]));
+    scheme.tertiary_palette = TonalPalette::from_hct(fix_if_disliked(colours[2]));
+
+    scheme
 }
 
 pub fn make_custom_color(

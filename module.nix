@@ -65,7 +65,7 @@ matugen: {
     "image ${cfg.wallpaper}" else
     "color ${sourceColorTypeMatcher cfg.source_color} \"${cfg.source_color}\"";
 
-  themePackage = builtins.trace command (pkgs.runCommandLocal "matugen-themes-${cfg.variant}" {} ''
+  themePackage = (pkgs.runCommandLocal "matugen-themes-${cfg.variant}" {} ''
     mkdir -p $out
     cd $out
     export HOME=$(pwd)
