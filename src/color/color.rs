@@ -182,6 +182,24 @@ pub fn generate_dynamic_scheme(
     scheme
 }
 
+fn final_transform(color: &CustomColor, is_dark: bool, mut value: Hct) -> Argb {
+    if color.name.starts_with("dark") {
+        if is_dark {
+            value.set_tone(value.get_tone() - 20.0);
+            value.into()
+        } else {
+            value.into()
+        }
+    } else {
+        if is_dark {
+            value.into()
+        } else {
+            value.set_tone(value.get_tone() + 20.0);
+            value.into()
+        }
+    }
+}
+
 pub fn make_custom_color(
     color: CustomColor,
     scheme_type: &Option<SchemeTypes>,
@@ -196,25 +214,61 @@ pub fn make_custom_color(
         color.value
     };
 
-    let light = generate_dynamic_scheme(scheme_type, value, false, contrast_level);
-    let dark = generate_dynamic_scheme(scheme_type, value, true, contrast_level);
+    let light_scheme = generate_dynamic_scheme(scheme_type, value, false, contrast_level);
+    let dark_scheme = generate_dynamic_scheme(scheme_type, value, true, contrast_level);
+
+    let light = ColorGroup {
+        color: final_transform(
+            &color,
+            false,
+            MaterialDynamicColors::primary().get_hct(&light_scheme),
+        ),
+        on_color: final_transform(
+            &color,
+            false,
+            MaterialDynamicColors::on_primary().get_hct(&light_scheme),
+        ),
+        color_container: final_transform(
+            &color,
+            false,
+            MaterialDynamicColors::primary_container().get_hct(&light_scheme),
+        ),
+        on_color_container: final_transform(
+            &color,
+            false,
+            MaterialDynamicColors::on_primary_container().get_hct(&light_scheme),
+        ),
+    };
+
+    let dark = ColorGroup {
+        color: final_transform(
+            &color,
+            true,
+            MaterialDynamicColors::primary().get_hct(&dark_scheme),
+        ),
+        on_color: final_transform(
+            &color,
+            true,
+            MaterialDynamicColors::on_primary().get_hct(&dark_scheme),
+        ),
+        color_container: final_transform(
+            &color,
+            true,
+            MaterialDynamicColors::primary_container().get_hct(&dark_scheme),
+        ),
+        on_color_container: final_transform(
+            &color,
+            true,
+            MaterialDynamicColors::on_primary_container().get_hct(&dark_scheme),
+        ),
+    };
 
     // debug!("custom_color: {:#?}", &custom_color);
     CustomColorGroup {
         color,
         value,
-        light: ColorGroup {
-            color: MaterialDynamicColors::primary().get_argb(&light),
-            on_color: MaterialDynamicColors::on_primary().get_argb(&light),
-            color_container: MaterialDynamicColors::primary_container().get_argb(&light),
-            on_color_container: MaterialDynamicColors::on_primary_container().get_argb(&light),
-        },
-        dark: ColorGroup {
-            color: MaterialDynamicColors::primary().get_argb(&dark),
-            on_color: MaterialDynamicColors::on_primary().get_argb(&dark),
-            color_container: MaterialDynamicColors::primary_container().get_argb(&dark),
-            on_color_container: MaterialDynamicColors::on_primary_container().get_argb(&dark),
-        },
+        light,
+        dark,
     }
 }
 
